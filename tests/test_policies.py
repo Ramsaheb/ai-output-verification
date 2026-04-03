@@ -17,6 +17,7 @@ def policy():
 def _make_verification_result(
     score=0.85,
     hallucination=False,
+    hallucination_severity="none",
     coverage="Full",
     entailment_label="entailment",
     sentence_analysis=None,
@@ -25,6 +26,7 @@ def _make_verification_result(
     return {
         "score": score,
         "hallucination_detected": hallucination,
+        "hallucination_severity": hallucination_severity,
         "context_coverage": coverage,
         "entailment": {
             "label": entailment_label,
@@ -51,14 +53,28 @@ class TestPolicyDecisions:
         assert result["decision"] == "FLAG"
 
     def test_refuse_on_low_confidence(self, policy):
-        vr = _make_verification_result(score=0.3, entailment_label="contradiction", hallucination=True)
+        vr = _make_verification_result(
+            score=0.3,
+            entailment_label="contradiction",
+            hallucination=True,
+            hallucination_severity="high",
+        )
         result = policy.evaluate(vr)
         assert result["decision"] == "REFUSE"
 
     def test_refuse_on_hallucination(self, policy):
-        vr = _make_verification_result(hallucination=True)
+        vr = _make_verification_result(hallucination=True, hallucination_severity="high")
         result = policy.evaluate(vr)
         assert result["decision"] == "REFUSE"
+
+    def test_flag_on_low_severity_hallucination(self, policy):
+        vr = _make_verification_result(
+            hallucination=True,
+            hallucination_severity="low",
+            entailment_label="neutral",
+        )
+        result = policy.evaluate(vr)
+        assert result["decision"] in ("FLAG", "ALLOW")
 
     def test_refuse_on_blocked_keywords(self, policy):
         vr = _make_verification_result()

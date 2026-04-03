@@ -40,6 +40,7 @@ class PolicyEngine:
         "blocked_keywords": [],
         "max_contradiction_sentences": 0,
         "max_inference_time_ms": settings.MAX_INFERENCE_TIME_MS,
+        "strict_mode": settings.STRICT_MODE_DEFAULT,
         "similarity_weight": settings.SIMILARITY_WEIGHT,
         "entailment_weight": settings.ENTAILMENT_WEIGHT,
     }
@@ -71,17 +72,27 @@ class PolicyEngine:
 
     @staticmethod
     def _check_hallucination(
-        detected: bool, policy: Dict
+        detected: bool,
+        severity: str,
+        entailment_label: str,
+        policy: Dict,
     ) -> Tuple[Optional[bool], str]:
         if not detected:
             return True, "No hallucination detected"
         if policy.get("allow_hallucination"):
             return None, "Hallucination detected but tolerated by policy — flagged"
-        return False, "Hallucination detected — answer not grounded in context"
+
+        if severity in ("low", "none") and entailment_label != "contradiction":
+            return None, "Potential support gaps detected — requires review"
+        if severity == "medium" and entailment_label != "contradiction":
+            return None, "Low-confidence grounding signal — flagged for review"
+        return False, "Hallucination risk is high — answer not safely grounded"
 
     @staticmethod
     def _check_coverage(
-        coverage: str, policy: Dict
+        coverage: str,
+        entailment_label: str,
+        policy: Dict,
     ) -> Tuple[Optional[bool], str]:
         if not policy.get("require_source_coverage", True):
             return True, "Coverage check disabled by policy"
@@ -89,6 +100,14 @@ class PolicyEngine:
         actual = _COVERAGE_RANK.get(coverage, 0)
         if actual >= required:
             return True, f"Coverage '{coverage}' meets '{policy['min_coverage_level']}'"
+
+        # If overall answer is entailed, low coverage is treated as reviewable mismatch,
+        # not an automatic hard failure.
+        if entailment_label == "entailment":
+            return None, (
+                f"Coverage '{coverage}' is below '{policy['min_coverage_level']}' "
+                "but overall entailment is positive — flagged for review"
+            )
         return False, f"Coverage '{coverage}' below required '{policy['min_coverage_level']}'"
 
     @staticmethod
@@ -182,18 +201,25 @@ class PolicyEngine:
             policy.update(policy_config)
 
         # Run all checks
+        entailment = verification_result.get("entailment", {})
+        entailment_label = entailment.get("label", "neutral")
         checks: Dict[str, Tuple[Optional[bool], str]] = {
             "confidence": self._check_confidence(
                 verification_result.get("score", 0.0), policy
             ),
             "hallucination": self._check_hallucination(
-                verification_result.get("hallucination_detected", False), policy
+                verification_result.get("hallucination_detected", False),
+                verification_result.get("hallucination_severity", "none"),
+                entailment_label,
+                policy,
             ),
             "coverage": self._check_coverage(
-                verification_result.get("context_coverage", "Low"), policy
+                verification_result.get("context_coverage", "Low"),
+                entailment_label,
+                policy,
             ),
             "entailment": self._check_entailment(
-                verification_result.get("entailment", {})
+                entailment
             ),
             "sentence_contradictions": self._check_sentence_contradictions(
                 verification_result.get("sentence_level_analysis", []), policy

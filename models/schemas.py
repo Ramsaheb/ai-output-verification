@@ -92,6 +92,7 @@ class PolicyConfig(BaseModel):
     min_coverage_level: str = Field(default="Partial", pattern="^(Low|Partial|Full)$")
     blocked_keywords: List[str] = Field(default_factory=list)
     max_contradiction_sentences: int = Field(default=0, ge=0)
+    strict_mode: Optional[bool] = Field(default=None)
     similarity_weight: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     entailment_weight: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     max_inference_time_ms: Optional[float] = Field(default=None, gt=0)

@@ -17,6 +17,7 @@ Verify an LLM-generated answer against provided context.
   "generated_answer": "string (required) — the LLM's response to verify",
   "policy_config": {
     "min_confidence": 0.7,
+    "strict_mode": false,
     "blocked_keywords": ["medical", "diagnosis"],
     "allow_hallucination": false,
     "require_source_coverage": true,
@@ -46,6 +47,8 @@ Verify an LLM-generated answer against provided context.
       "confidence": 0.91
     },
     "context_coverage": "Full",
+    "strict_mode_applied": false,
+    "strict_mode_source": "balanced_default",
     "sentence_analysis": [
       {
         "index": 0,
@@ -82,6 +85,7 @@ Verify an LLM-generated answer against provided context.
 | `hallucination` | Hallucination detected and `allow_hallucination` is false |
 | `coverage` | Coverage level below `min_coverage_level` |
 | `entailment` | NLI label is `contradiction` |
+| `strict_mode` | Optional stricter contradiction/support thresholds for high-risk domains |
 | `sentence_contradictions` | Contradicting sentences exceed `max_contradiction_sentences` |
 | `blocked_keywords` | Answer contains any keyword from `blocked_keywords` list |
 

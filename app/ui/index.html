@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Output Verification Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/ui/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a" aria-hidden="true"></div>
+    <div class="ambient ambient-b" aria-hidden="true"></div>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="hero-chip">Production Verification Console</div>
+          <h1>AI Output Verification Platform</h1>
+          <p>
+            Verify generated answers against context with policy-driven decisions.
+          </p>
+        </div>
+        <div class="status-strip" id="statusStrip">
+          <span class="status-item">Service <strong id="apiStatus">Checking...</strong></span>
+          <span class="status-item">Mode <strong id="modeStatus">Balanced</strong></span>
+        </div>
+      </header>
+
+      <section class="workspace-grid">
+        <section class="card form-card">
+          <h2 class="section-title">Compose Verification Input</h2>
+
+          <div class="field">
+            <label for="query">User Query</label>
+            <input id="query" type="text" placeholder="What is the capital of France?" />
+          </div>
+
+          <div class="field">
+            <label for="context">Context Chunks (one per line)</label>
+            <textarea
+              id="context"
+              rows="8"
+              placeholder="Paris is the capital city of France.&#10;France is in Western Europe."
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <label for="answer">Generated Answer</label>
+            <textarea
+              id="answer"
+              rows="5"
+              placeholder="The capital of France is Paris."
+            ></textarea>
+          </div>
+
+          <div class="actions">
+            <button id="verifyBtn" type="button">Verify Output</button>
+            <button id="exampleSupportBtn" type="button" class="secondary">
+              Supported Example
+            </button>
+            <button id="exampleHallucinationBtn" type="button" class="secondary">
+              Hallucination Example
+            </button>
+            <button id="clearBtn" type="button" class="ghost">Clear</button>
+          </div>
+          <p class="hint">
+            For stronger reliability, keep each context line factual and atomic.
+          </p>
+        </section>
+
+        <section class="side-stack">
+          <section class="card results-card" id="resultsCard" hidden>
+            <div class="result-head">
+              <h2 class="section-title">Verification Result</h2>
+              <span id="decisionPill" class="decision-pill">-</span>
+            </div>
+            <div class="metrics" id="metrics"></div>
+            <h3>Explanation</h3>
+            <p id="explanation"></p>
+          </section>
+
+          <section class="card placeholder-card" id="placeholderCard">
+            <h2 class="section-title">Ready for Evaluation</h2>
+            <p>
+              Submit the form to get decision quality signals, coverage,
+              entailment status, and a policy-grounded explanation.
+            </p>
+            <ul class="quality-notes">
+              <li>Use source facts only, not instructions.</li>
+              <li>One claim per line improves support traceability.</li>
+              <li>Stress test with the hallucination sample before go-live.</li>
+            </ul>
+          </section>
+
+          <section class="card error-card" id="errorCard" hidden>
+            <h2 class="section-title">Request Error</h2>
+            <p id="errorMessage"></p>
+          </section>
+
+          <section class="card footer-card">
+            <p class="footer-note">Secure verification interface for production workflows.</p>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="/ui/static/app.js"></script>
+  </body>
+</html>

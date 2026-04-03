@@ -1,0 +1,35 @@
+.git
+.gitignore
+.gitattributes
+
+# Local Python environments and caches
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Local runtime/state files
+.env
+logs
+*.db
+*.sqlite
+*.sqlite3
+
+# Developer-only content
+tests
+docs
+.vscode
+.idea
+
+# Workspace and artifacts
+*.log
+*.pdf
+*.ipynb
+.DS_Store
+Thumbs.db

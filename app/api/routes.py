@@ -97,6 +97,8 @@ async def verify_output(request: VerificationRequest):
                 "coverage": vr["context_coverage"],
                 "coverage_percent": vr.get("coverage_percent", 0.0),
                 "confidence_components": vr.get("confidence_components", {}),
+                "strict_mode_applied": vr.get("strict_mode_applied", False),
+                "strict_mode_source": vr.get("strict_mode_source", "unknown"),
                 "inference_time_ms": vr.get("inference_time_ms"),
                 "sentence_count": len(vr.get("sentence_level_analysis", [])),
                 "sentence_contradictions": sum(
@@ -112,6 +114,7 @@ async def verify_output(request: VerificationRequest):
         # 4 ─ Build explanation
         decision = pr["decision"]
         reasons = pr.get("reasons", [])
+        support_gaps = vr.get("support_gaps", [])
         if decision == "ALLOW":
             explanation = (
                 f"Output verified — confidence {vr['score']:.2%}. "
@@ -120,9 +123,25 @@ async def verify_output(request: VerificationRequest):
             if vr.get("warnings"):
                 explanation = f"{explanation} Warnings: {'; '.join(vr['warnings'])}"
         elif decision == "FLAG":
-            explanation = f"Flagged for review. {'; '.join(reasons)}"
+            if support_gaps:
+                gap = support_gaps[0]
+                explanation = (
+                    "Flagged for review. "
+                    f"Potentially unsupported phrase: '{gap.get('sentence', '')}'. "
+                    f"Reason: {gap.get('reason', 'Insufficient support evidence')}."
+                )
+            else:
+                explanation = f"Flagged for review. {'; '.join(reasons)}"
         else:
-            explanation = f"Output refused. {'; '.join(reasons)}"
+            if support_gaps:
+                gap = support_gaps[0]
+                explanation = (
+                    "Output refused. "
+                    f"Conflicting phrase: '{gap.get('sentence', '')}'. "
+                    f"Reason: {gap.get('reason', 'Contradiction with context')}"
+                )
+            else:
+                explanation = f"Output refused. {'; '.join(reasons)}"
 
         # 5 ─ Response
         return VerificationResponse(
@@ -138,9 +157,14 @@ async def verify_output(request: VerificationRequest):
                 "entailment": vr["entailment"],
                 "context_coverage": vr["context_coverage"],
                 "coverage_percent": vr.get("coverage_percent", 0.0),
+                "hallucination_severity": vr.get("hallucination_severity", "none"),
+                "hallucination_reason": vr.get("hallucination_reason", "grounded"),
                 "sentence_analysis": vr["sentence_level_analysis"],
+                "support_gaps": vr.get("support_gaps", []),
                 "inference_time_ms": vr.get("inference_time_ms"),
                 "confidence_components": vr.get("confidence_components", {}),
+                "strict_mode_applied": vr.get("strict_mode_applied", False),
+                "strict_mode_source": vr.get("strict_mode_source", "unknown"),
                 "warnings": vr.get("warnings", []),
             },
             policy_results={

@@ -108,6 +108,80 @@ class TestVerify:
         assert data["decision"] == "REFUSE"
         assert data["hallucination_detected"] is True
 
+    def test_semantic_risk_qualifier_paraphrase_is_not_false_refused(self, client):
+        """Equivalent risk wording should not be treated as hallucination."""
+        payload = {
+            "query": "What are the side effects of ibuprofen?",
+            "context": [
+                "Common side effects of ibuprofen include nausea, dizziness, and stomach upset.",
+                "Serious side effects may include gastrointestinal bleeding and kidney damage.",
+            ],
+            "generated_answer": (
+                "Common side effects include nausea and dizziness. "
+                "In rare cases, serious issues like gastrointestinal bleeding can occur."
+            ),
+        }
+
+        data = client.post("/api/v1/verify", json=payload).json()
+
+        assert data["decision"] == "ALLOW", (
+            f"Expected ALLOW for grounded paraphrase, got {data['decision']}"
+        )
+        assert data["hallucination_detected"] is False
+        assert data["verification_details"]["entailment"]["label"] == "entailment"
+        assert data["verification_details"]["coverage_percent"] >= 70.0
+
+    def test_entailment_consistency_guard_prevents_false_hallucination(self, client):
+        payload = {
+            "query": "Summarize ibuprofen side effects",
+            "context": [
+                "Common side effects include nausea and dizziness.",
+                "Serious side effects may include gastrointestinal bleeding.",
+            ],
+            "generated_answer": (
+                "Common side effects include nausea and dizziness. "
+                "In rare cases, gastrointestinal bleeding can occur."
+            ),
+        }
+
+        data = client.post("/api/v1/verify", json=payload).json()
+        details = data["verification_details"]
+
+        assert details["entailment"]["label"] == "entailment"
+        assert data["hallucination_detected"] is False
+        assert details.get("hallucination_severity") in ("none", "low")
+
+    def test_auto_strict_mode_is_enabled_for_high_risk_domain(self, client):
+        payload = {
+            "query": "Can you give medical dosage guidance?",
+            "context": [
+                "Always consult a licensed clinician before changing medication dosage.",
+            ],
+            "generated_answer": "Always consult a licensed clinician before changing medication dosage.",
+        }
+
+        data = client.post("/api/v1/verify", json=payload).json()
+        details = data["verification_details"]
+
+        assert details["strict_mode_applied"] is True
+        assert details["strict_mode_source"] in ("auto_domain", "settings_default")
+
+    def test_policy_override_can_disable_auto_strict_mode(self, client):
+        payload = {
+            "query": "Can you give medical dosage guidance?",
+            "context": [
+                "Always consult a licensed clinician before changing medication dosage.",
+            ],
+            "generated_answer": "Always consult a licensed clinician before changing medication dosage.",
+            "policy_config": {"strict_mode": False},
+        }
+
+        data = client.post("/api/v1/verify", json=payload).json()
+        details = data["verification_details"]
+
+        assert details["strict_mode_applied"] is False
+        assert details["strict_mode_source"] == "policy_override"
+
 
 # ═══════════════════════════════════════════════════════════
 #  5. /audit/{id} — retrieve exact decision
