@@ -28,6 +28,7 @@ from sqlalchemy import (
     Text,
     create_engine,
 )
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
@@ -94,7 +95,12 @@ class AuditLogger:
             connect_args={"check_same_thread": False},
             echo=False,
         )
-        Base.metadata.create_all(bind=self._engine)
+        try:
+            Base.metadata.create_all(bind=self._engine)
+        except OperationalError as exc:
+            # Gunicorn workers can race on SQLite DDL; ignore benign "already exists" errors.
+            if "already exists" not in str(exc).lower():
+                raise
         self._SessionLocal = sessionmaker(bind=self._engine, expire_on_commit=False)
 
         # ── JSONL flat-file dir ───────────────────────────

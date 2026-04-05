@@ -54,7 +54,6 @@ COPY --from=builder /root/.cache /home/appuser/.cache
 
 COPY app/ ./app/
 COPY models/ ./models/
-COPY .env.example ./.env.example
 
 RUN mkdir -p logs/audit \
     && chown -R appuser:appuser /app /home/appuser
