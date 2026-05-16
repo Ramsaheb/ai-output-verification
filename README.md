@@ -1,3 +1,14 @@
+---
+title: AI Output Verification Platform
+emoji: 🔍
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # AI Output Verification Platform
 
 A FastAPI service that verifies whether an LLM answer is grounded in the provided context before returning it to users. It combines semantic similarity, NLI entailment checks, sentence-level support analysis, policy gating, and audit logging.
