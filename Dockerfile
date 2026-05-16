@@ -48,8 +48,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /install /usr/local
 
-COPY app/ ./app/
-COPY models/ ./models/
+# Hugging Face Spaces requires running as user 1000 to have write permissions
+RUN useradd -m -u 1000 user \
+    && chown -R user:user /app
+USER user
+
+COPY --chown=user:user app/ ./app/
+COPY --chown=user:user models/ ./models/
 
 RUN mkdir -p logs/audit
 
